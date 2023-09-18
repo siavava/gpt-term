@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-from data import get_batch, encode, decode, vocab_size
+from .data import get_batch, encode, decode, vocab_size
 
 import yaml
 with open('config.yml', 'r') as f:
@@ -244,6 +244,23 @@ class GPTLanguageModel(nn.Module):
     # save model
     torch.save(self.state_dict(), f'models/{save_name}.pth')
 
+def load_model(path=None):
+  """
+    load the latest model checkpoint.
+  """
+
+  if not path:
+    path = "models/transfusion.pth"
+  model = GPTLanguageModel()
+
+  # load last checkpoint
+  model.load_state_dict(torch.load(path, map_location=device))
+
+  # cast model to device (CPU or GPU)
+  model = model.to(device)
+
+  return model
+
 
 
 __all__ = [
@@ -251,4 +268,5 @@ __all__ = [
   , "GPTLanguageModel"
   , "encode"
   , "decode"
+  , "load_model"
 ]
