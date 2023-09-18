@@ -214,7 +214,7 @@ class GPTLanguageModel(nn.Module):
       
     return index
 
-  def train_model(self, save_name: str):
+  def train_model(self, save_name: str, checkpoint=0):
     """
       Train the model.
     """
@@ -222,13 +222,13 @@ class GPTLanguageModel(nn.Module):
     # create a PyTorch optimizer
     optimizer = torch.optim.AdamW(self.parameters(), lr=learning_rate)
 
-    for iter in range(max_iters):
+    for iter in range(checkpoint, max_iters):
       print(f"{iter}/{max_iters}", end='\r')
 
       # every once in a while evaluate the loss on train and val sets
       if iter % eval_interval == 0 or iter == max_iters - 1:
         losses = estimate_loss(self)
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        print(f"step {iter:5}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
         torch.save(self.state_dict(), f'models/{save_name}-{iter}.pth')
 
