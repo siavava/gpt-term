@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-from .data import get_batch, encode, decode, vocab_size
+from data import get_batch, encode, decode, vocab_size
 
 import yaml
 with open('config.yml', 'r') as f:
