@@ -1,19 +1,32 @@
 #!/usr/bin/env python3
 import torch; import torch.nn as nn; import torch.nn.functional as F
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-import yaml
+import yaml; import datasets
 with open('config.yml', 'r') as f: globals().update(yaml.safe_load(f))
 
-class TextProcessor:
-  with open('data/input.txt', 'r', encoding='utf-8') as f:
-    chars = sorted(list(set(f.read())));            vocab_size = len(chars)
-    stoi = { ch:i for i,ch in enumerate(chars) };   itos = { i:ch for i,ch in enumerate(chars) }
 
+dataset = datasets.load_dataset('siavava/ai-tech-articles', split='train')
+df = dataset.to_pandas()
+df = df[df["year"] == 2023]
+
+# concat all "text" column values into one string
+text = " ".join(df["text"].tolist())
+chars = sorted(list(set(text)))
+vocab_size = len(chars)
+stoi = { ch:i for i,ch in enumerate(chars) }
+itos = { i:ch for i,ch in enumerate(chars) }
+_encode = lambda s: [stoi.get(c, 0) for c in s]
+_decode = lambda l: ''.join([itos.get(i, " ") for i in l])
+
+class TextProcessor:  
   @classmethod
-  def encode(cls, s): return [cls.stoi[c] for c in s]
+  def encode(cls, s) -> list[int]: return _encode(s)
   
   @classmethod
-  def decode(cls, l): return ''.join([cls.itos[i] for i in l])
+  def decode(cls, l):
+    res = _decode(l).split()
+    res = [res[i:i+10] for i in range(0, len(res), 10)]
+    return "\n".join([" ".join(line) for line in res])
 
 class Head(nn.Module):
   """One self-attention head."""
@@ -68,11 +81,11 @@ class GPTLanguageModel(nn.Module):
   """GPT language model with a single embedding layer, n layers, and a linear output layer."""
   def __init__(self):
     super().__init__()
-    self.token_embedding_table = nn.Embedding(TextProcessor.vocab_size, embeddings_size)
+    self.token_embedding_table = nn.Embedding(vocab_size, embeddings_size)
     self.position_embedding_table = nn.Embedding(block_size, embeddings_size)
     self.blocks = nn.Sequential(*[Block(embeddings_size, head_count=head_count) for _ in range(n_layer)])
     self.ln_f = nn.LayerNorm(embeddings_size)
-    self.lm_head = nn.Linear(embeddings_size, TextProcessor.vocab_size)
+    self.lm_head = nn.Linear(embeddings_size, vocab_size)
     self.apply(self._init_weights)
 
   def _init_weights(self, module):
